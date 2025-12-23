@@ -23,7 +23,7 @@ public class CommonHelper {
      * (payment typically executed at the end of the day, so if the bond changes owners before that,
      * the buyer would be entitled to that payment) -- NEEDS REVIEW
      */
-     public int calculateRemainingPeriods(LocalDate currentDate, LocalDate issueDate, LocalDate maturationDate, int periodsPerPaymentTerm) {
+    public int calculateRemainingPeriods(LocalDate currentDate, LocalDate issueDate, LocalDate maturationDate, int periodsPerPaymentTerm) {
 
         if (maturationDate.isBefore(currentDate)) {
             throw new IllegalArgumentException("Bond Matured. Maturation date must be in the future");
@@ -32,16 +32,13 @@ public class CommonHelper {
         int monthsPerPeriod = 12 / periodsPerPaymentTerm;
         int remainingPeriods = 0;
 
-        // Start from the issue date and count forward to find all payment dates
-        LocalDate nextPaymentDate = issueDate.plusMonths(monthsPerPeriod);
+        // Use findNextPaymentDate to get the first payment on or after currentDate
+        LocalDate paymentDate = findNextPaymentDate(issueDate, currentDate, periodsPerPaymentTerm);
 
-        // Count all future payment dates up to and including maturity
-        while (!nextPaymentDate.isAfter(maturationDate)) {
-            // If currentDate equals a payment date, that payment should still be counted as remaining.
-            if (!nextPaymentDate.isBefore(currentDate)) {
-                remainingPeriods++;
-            }
-            nextPaymentDate = nextPaymentDate.plusMonths(monthsPerPeriod);
+        // Count all payment dates from there up to and including maturity
+        while (!paymentDate.isAfter(maturationDate)) {
+            remainingPeriods++;
+            paymentDate = paymentDate.plusMonths(monthsPerPeriod);
         }
 
         return remainingPeriods;
@@ -62,16 +59,12 @@ public class CommonHelper {
     public double calculateFractionalPeriod(LocalDate issueDate, LocalDate currentDate, int periodsPerPaymentTerm) {
         int monthsPerPeriod = 12 / periodsPerPaymentTerm;
 
-        // Find the last payment date before or on current date
-        LocalDate lastPaymentDate = issueDate;
-        LocalDate nextPaymentDate = issueDate.plusMonths(monthsPerPeriod);
+        LocalDate nextPaymentDate = findNextPaymentDate(issueDate, currentDate, periodsPerPaymentTerm);
 
-        while (nextPaymentDate.isBefore(currentDate)) {
-            lastPaymentDate = nextPaymentDate;
-            nextPaymentDate = nextPaymentDate.plusMonths(monthsPerPeriod);
-        }
 
-        // Calculate using days for precision
+        // Previous payment is one period before the next payment
+        LocalDate lastPaymentDate = nextPaymentDate.minusMonths(monthsPerPeriod);
+
         long daysSinceLastPayment = java.time.temporal.ChronoUnit.DAYS.between(lastPaymentDate, currentDate);
         long daysInPeriod = java.time.temporal.ChronoUnit.DAYS.between(lastPaymentDate, nextPaymentDate);
 
@@ -90,6 +83,7 @@ public class CommonHelper {
      * @param currentDate Current date to find the next payment on or after
      * @param periodsPerYear Number of payment periods per year (1=annual, 2=semiannual, 4=quarterly, 12=monthly)
      * @return The next payment date on or after currentDate
+     * Currently supports ACT/ACT day count convention, TODO support needed for other day count conventions, see Macaulay Duration and YTM calculations
      */
     public LocalDate findNextPaymentDate(LocalDate issueDate, LocalDate currentDate, int periodsPerYear) {
         int monthsPerPeriod = 12 / periodsPerYear;
@@ -114,4 +108,32 @@ public class CommonHelper {
             default -> throw new IllegalArgumentException("Invalid payment term: " + paymentTerm);
         };
     }
+
+    /**
+     * Advances a date by one payment period based on the day count convention.
+     *
+     * @param date The starting date
+     * @param periodsPerYear Number of payment periods per year
+     * @param dayCountConvention The day count convention (e.g., "ACT/ACT", "30/360")
+     * @return The next payment date
+     * TODO : Implement different day count conventions to adjust date advancement rather than plusMonths
+     * TODO : Use ENUM for dayCountConvention
+     * TODO : Need reverseByPeriod function as well
+     */
+//    public LocalDate advanceByPeriod(LocalDate date, int periodsPerYear, String dayCountConvention) {
+//        int monthsPerPeriod = 12 / periodsPerYear;
+//
+//        return switch (dayCountConvention.toUpperCase()) {
+//            case "30/360", "30E/360" -> {
+//                // 30/360 assumes each month has 30 days
+//                // Payment dates still advance by calendar months
+//                yield date.plusMonths(monthsPerPeriod);
+//            }
+//            case "ACT/ACT", "ACT/365", "ACT/360" -> {
+//                // Actual calendar-based advancement
+//                yield date.plusMonths(monthsPerPeriod);
+//            }
+//            default -> throw new IllegalArgumentException("Unsupported day count convention: " + dayCountConvention);
+//        };
+//    }
 }

@@ -44,7 +44,7 @@ public class YTMHelper {
     * @return Approximate  annualized YTM in basis points (e.g., 500 for 5%)
      * //TODO: return both annualized and per period YTM?
      * //TODO : ENUM for paymentTerm
-     * //TODO : Day Count Convention Option, ACT/ACT default, 30/360 for Corporate/Municipal/Agency bonds
+     * //TODO : Day Count Convention Option, ACT/ACT default, 30/360 for Corporate/Municipal/Agency bonds, see findNextPaymentDate, MacCaulay Duration,  and calculateRemainingPeriods for details
     */
     public double calculateYTM(LocalDate currentDate, Bond bond) {
 

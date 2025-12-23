@@ -901,8 +901,8 @@ class PortfolioControllerTest {
         }
 
         @Test
-        @DisplayName("Should reject zero quantity in portfolio")
-        void shouldRejectZeroQuantity() throws Exception {
+        @DisplayName("Should accept zero quantity in portfolio")
+        void shouldAcceptZeroQuantity() throws Exception {
             String invalidJson = createSingleBondPortfolioJson(
                 VALID_ISIN_1, "2023-01-15", "2033-01-15",
                 "500", "100000", "95000", "semiannual", "0"
@@ -911,7 +911,7 @@ class PortfolioControllerTest {
             mockMvc.perform(post("/api/portfolios/analyze")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isOk());
         }
 
         @Test

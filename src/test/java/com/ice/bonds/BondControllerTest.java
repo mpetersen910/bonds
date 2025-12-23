@@ -717,8 +717,8 @@ class BondControllerTest {
         }
 
         @Test
-        @DisplayName("Should reject zero quantity")
-        void shouldRejectZeroQuantity() throws Exception {
+        @DisplayName("Should accept zero quantity")
+        void shouldAcceptZeroQuantity() throws Exception {
             String invalidJson = createBondJson(
                 VALID_ISIN_1, "2023-01-15", "2033-01-15",
                 "500", "100000", "95000", "semiannual", "0"
@@ -727,7 +727,7 @@ class BondControllerTest {
             mockMvc.perform(post("/api/bonds/analyze")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isOk());
         }
 
         @Test

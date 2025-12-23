@@ -173,9 +173,6 @@ class YTMHelperTest {
         }
 
 
-        //TODO test different coupon rates
-
-
         @Test
         @DisplayName("Should throw exception for invalid payment term")
         void testInvalidPaymentTerm() {

@@ -424,6 +424,51 @@ class PortfolioHelperTest {
         }
 
         @Test
+        @DisplayName("Zero Quantity Bonds should have 0 Bond Weight, and not affect portfolio value")
+        void testZeroQuantityBondInPortfolio() {
+            // Given: Bonds with zero quantity
+            Bond bond1 = createBond("US0378331005", 100000, 5, 5.5, 5.2);
+            Bond bond2 = createBond("US5949181045", 150000, 10, 4.0, 3.8);
+            Bond bond3 = createBond("US5949181045", 150000, 0, 4.0, 3.8);
+
+            Portfolio portfolio = createPortfolio("ACC001", List.of(bond1, bond2));
+            Portfolio portfolio1 = createPortfolio("ACC001", List.of(bond1, bond2, bond3));
+
+            // When
+            long totalValue = portfolioHelper.calculateTotalPortfolioValue(portfolio);
+            long totalValue1 = portfolioHelper.calculateTotalPortfolioValue(portfolio1);
+
+            double weightedDuration = portfolioHelper.calculateWeightedAverageMacaulayDuration(portfolio);
+            double weightedDuration1 = portfolioHelper.calculateWeightedAverageMacaulayDuration(portfolio1);
+
+            // Then: Total Values and weighted Durations should be equal, bond3 should not affect portfolio calculations and have 0 weight
+            assertEquals(totalValue, totalValue1,
+                    "Total portfolio value should be the same regardless of zero-quantity bonds");
+
+            assertEquals(weightedDuration, weightedDuration1,
+                    "Weighted average Macaulay duration should be the same regardless of zero-quantity bonds");
+
+            logger.info("Total Value without zero-qty bond: {} cents, with zero-qty bond: {} cents", totalValue, totalValue1);
+            logger.info("Weighted Macaulay Duration without zero-qty bond: {}, with zero-qty bond: {}", weightedDuration, weightedDuration1);
+
+            // Verify bond3 has zero weight in portfolio1
+            double bond3Weight = portfolioHelper.calculateBondWeight(bond3, portfolio1);
+            assertEquals(0.0, bond3Weight,
+                    "Bond with zero quantity should have 0% weight in portfolio");
+
+            logger.info("Bond3 weight in portfolio with zero quantity: {}", bond3Weight);
+
+            // Verify the zero-quantity bond doesn't contribute to total value
+            long bond3Value = bond3.getTotalMarketValue();
+            assertEquals(0L, bond3Value,
+                    "Bond with zero quantity should have 0 value");
+
+            logger.info("Bond3 total market value with zero quantity: {} cents", bond3Value);
+
+
+        }
+
+        @Test
         @DisplayName("Should handle large quantities without overflow")
         void testLargeQuantities() {
             // Given: Bonds with large quantities

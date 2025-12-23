@@ -87,13 +87,13 @@ All monetary values use **cents** (e.g., `100000` = $1,000.00) and rates use **b
 
 ## Validation Rules
 
-| Field | Rules |
-|-------|-------|
-| `isin` | Valid 12-character ISIN with correct check digit |
-| `issueDate` / `maturityDate` | YYYY-MM-DD format; maturity must be after issue date |
-| `couponRate` | Non-negative integer (no decimals, no commas) |
+| Field | Rules                                                  |
+|-------|--------------------------------------------------------|
+| `isin` | Valid 12-character ISIN with correct check digit       |
+| `issueDate` / `maturityDate` | YYYY-MM-DD format; maturity must be after issue date   |
+| `couponRate` | Non-negative integer (no decimals, no commas)          |
 | `faceValue` / `marketValue` | Non-negative integer in cents (no decimals, no commas) |
-| `quantity` | Positive integer (no decimals, no commas) |
+| `quantity` | Non-negative integer (no decimals, no commas)          |
 
 ## Example Usage
 
@@ -151,11 +151,11 @@ Returned in **basis points**. Represents the total return anticipated if the bon
 
 ### Macaulay Duration
 
-Returned in **years**. The weighted average time until cash flows are received.
+Returned in **years** The weighted average time until cash flows are received. Calculated in days before conversion to years.
 
 ### Modified Duration
 
-Returned in **years**. Measures the bond's price sensitivity to interest rate changes.
+Returned in **years**. Measures the bond's price sensitivity to interest rate changes. Calculated in days before conversion to years.
 
 ### Portfolio Weighted Duration
 
@@ -184,6 +184,12 @@ src/
     └── *Test.java      # Unit and integration tests
 ```
 
+## TODO
+ - Implement additional day count conventions
+ - - ENUM for day count types, advanceByPeriod, and reverseByPeriod methods, and integrate into calculations
+ - ENUM for payment frequency to replace string literals
+ - YTM calculation to return by period and annualized values both
+ - Review whether payment is at beginning or end of day and adjust calculations accordingly
 ## License
 
 This project is provided as-is for educational and demonstration purposes.

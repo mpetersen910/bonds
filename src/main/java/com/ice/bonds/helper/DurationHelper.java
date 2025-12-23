@@ -33,6 +33,7 @@ public class DurationHelper {
      * @param ytm Annualized yield to maturity in basis points
      * @return Macaulay Duration in years
      * //TODO ytm per period to be calculated from YTMHelper in the future
+     * Currently supports ACT/ACT day count convention, TODO support needed for other day count conventions, see Macaulay Duration and YTM calculations
      */
     public double calculateMacaulayDuration(Bond bond, double ytm) {
         LocalDate today = LocalDate.now();

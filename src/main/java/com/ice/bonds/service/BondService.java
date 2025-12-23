@@ -252,8 +252,8 @@ public class BondService {
         }
         try {
             int parsedQuantity = Integer.parseInt(quantity);
-            if (parsedQuantity <= 0) {
-                throw new IllegalArgumentException("Invalid quantity: " + quantity + ". Quantity must be a positive integer");
+            if (parsedQuantity < 0) {
+                throw new IllegalArgumentException("Invalid quantity: " + quantity + ". Quantity must be non-negative integer");
             }
             return parsedQuantity;
         } catch (NumberFormatException e) {
