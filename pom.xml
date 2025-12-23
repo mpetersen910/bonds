@@ -13,24 +13,12 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>bonds</name>
 	<description>Bond Portfolio Risk Analyzer</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 	<properties>
 		<java.version>25</java.version>
 		<spring.version>4.0.0</spring.version>
 	</properties>
 	<dependencies>
+		<!--TODO could use spring webflux if process expands to external api calls or db writes		-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
