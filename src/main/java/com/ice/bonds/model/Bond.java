@@ -4,8 +4,6 @@ import java.time.LocalDate;
 
 public class Bond {
 
-    //TODO UniqueID needed to represent different holdings of the same bond in a portfolio?
-
     //International Securities Identification Number
     private String ISIN;
 
