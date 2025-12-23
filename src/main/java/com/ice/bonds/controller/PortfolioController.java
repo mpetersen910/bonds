@@ -3,7 +3,7 @@ package com.ice.bonds.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ice.bonds.dto.BondDTO;
+import com.ice.bonds.dto.BondDTORequest;
 import com.ice.bonds.dto.BondInPortfolioAnalysisResponse;
 import com.ice.bonds.dto.PortfolioAnalysisResponse;
 import com.ice.bonds.model.Bond;
@@ -35,18 +35,18 @@ public class PortfolioController {
     /**
      * Analyzes a portfolio of bonds and returns weighted durations and total value.
      *
-     * @param bondDTOs List of bond data from JSON request
+     * @param bondDTORequests List of bond data from JSON request
      * @return PortfolioAnalysisResponse containing portfolio analysis results
      */
     @PostMapping("/analyze")
-    public ResponseEntity<PortfolioAnalysisResponse> analyzePortfolio(@RequestBody List<BondDTO> bondDTOs) {
-        logger.info("Received portfolio analysis request with {} bonds", bondDTOs.size());
+    public ResponseEntity<PortfolioAnalysisResponse> analyzePortfolio(@RequestBody List<BondDTORequest> bondDTORequests) {
+        logger.info("Received portfolio analysis request with {} bonds", bondDTORequests.size());
 
         // Create a new portfolio with a default account ID
         Portfolio portfolio = new Portfolio("default-account");
 
         // Add bonds to the portfolio and analyze
-        portfolio = portfolioService.addBondsToPortfolio(portfolio, bondDTOs);
+        portfolio = portfolioService.addBondsToPortfolio(portfolio, bondDTORequests);
 
         // Map the portfolio to the response DTO
         PortfolioAnalysisResponse response = mapToPortfolioAnalysisResponse(portfolio);
@@ -65,24 +65,24 @@ public class PortfolioController {
     public ResponseEntity<PortfolioAnalysisResponse> analyzePortfolioFromString(@RequestBody String jsonString) {
         logger.info("Received portfolio analysis request from JSON string");
 
-        List<BondDTO> bondDTOs;
+        List<BondDTORequest> bondDTORequests;
         try {
             // The input is a JSON-encoded string. We need to first deserialize the string value,
             // then parse the resulting JSON array.
             String actualJson = objectMapper.readValue(jsonString, String.class);
-            bondDTOs = objectMapper.readValue(actualJson, new TypeReference<List<BondDTO>>() {});
+            bondDTORequests = objectMapper.readValue(actualJson, new TypeReference<List<BondDTORequest>>() {});
         } catch (JsonProcessingException e) {
             logger.error("Failed to parse JSON string: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid JSON format: " + e.getMessage());
         }
 
-        logger.info("Parsed {} bonds from JSON string", bondDTOs.size());
+        logger.info("Parsed {} bonds from JSON string", bondDTORequests.size());
 
         // Create a new portfolio with a default account ID
         Portfolio portfolio = new Portfolio("default-account");
 
         // Add bonds to the portfolio and analyze
-        portfolio = portfolioService.addBondsToPortfolio(portfolio, bondDTOs);
+        portfolio = portfolioService.addBondsToPortfolio(portfolio, bondDTORequests);
 
         // Map the portfolio to the response DTO
         PortfolioAnalysisResponse response = mapToPortfolioAnalysisResponse(portfolio);

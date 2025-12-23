@@ -1,6 +1,6 @@
 package com.ice.bonds.dto;
 
-public class BondDTO {
+public class BondDTORequest {
 
 
     // Bond Details

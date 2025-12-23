@@ -3,7 +3,7 @@ package com.ice.bonds.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ice.bonds.dto.BondAnalysisResponse;
-import com.ice.bonds.dto.BondDTO;
+import com.ice.bonds.dto.BondDTORequest;
 import com.ice.bonds.service.BondService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,15 +33,15 @@ public class BondController {
      * Analyzes a bond and returns YTM, Macaulay Duration, and Modified Duration.
      * Validates the ISIN before processing.
      *
-     * @param bondDTO The bond data from JSON request
+     * @param bondDTORequest The bond data from JSON request
      * @return BondAnalysisResponse containing YTM (basis points), Macaulay Duration (years), Modified Duration (years)
      * @throws IllegalArgumentException if the ISIN is invalid
      */
     @PostMapping("/analyze")
-    public ResponseEntity<BondAnalysisResponse> analyzeBond(@RequestBody BondDTO bondDTO) {
+    public ResponseEntity<BondAnalysisResponse> analyzeBond(@RequestBody BondDTORequest bondDTORequest) {
 
-        logger.info("Received bond analysis request for ISIN: {}", bondDTO.getIsin());
-        BondAnalysisResponse response = bondService.analyzeBondWithResponse(bondDTO);
+        logger.info("Received bond analysis request for ISIN: {}", bondDTORequest.getIsin());
+        BondAnalysisResponse response = bondService.analyzeBondWithResponse(bondDTORequest);
         return ResponseEntity.ok(response);
     }
 
@@ -57,7 +57,7 @@ public class BondController {
     public ResponseEntity<BondAnalysisResponse> analyzeBondFromString(@RequestBody String jsonString) {
         logger.info("Received bond analysis request from JSON string");
 
-        BondDTO bondDTO;
+        BondDTORequest bondDTORequest;
         try {
             // The input is a JSON-encoded string. We need to first deserialize the string value,
             // then parse the resulting JSON object.
@@ -68,14 +68,14 @@ public class BondController {
                 throw new IllegalArgumentException("JSON string content cannot be null or empty");
             }
 
-            bondDTO = objectMapper.readValue(actualJson, BondDTO.class);
+            bondDTORequest = objectMapper.readValue(actualJson, BondDTORequest.class);
         } catch (JsonProcessingException e) {
             logger.error("Failed to parse JSON string: {}", e.getMessage());
             throw new IllegalArgumentException("Invalid JSON format: " + e.getMessage());
         }
 
-        logger.info("Parsed bond from JSON string for ISIN: {}", bondDTO.getIsin());
-        BondAnalysisResponse response = bondService.analyzeBondWithResponse(bondDTO);
+        logger.info("Parsed bond from JSON string for ISIN: {}", bondDTORequest.getIsin());
+        BondAnalysisResponse response = bondService.analyzeBondWithResponse(bondDTORequest);
         return ResponseEntity.ok(response);
     }
 

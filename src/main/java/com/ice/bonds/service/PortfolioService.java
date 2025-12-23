@@ -1,6 +1,6 @@
 package com.ice.bonds.service;
 
-import com.ice.bonds.dto.BondDTO;
+import com.ice.bonds.dto.BondDTORequest;
 import com.ice.bonds.helper.PortfolioHelper;
 import com.ice.bonds.model.Bond;
 import com.ice.bonds.model.Portfolio;
@@ -19,8 +19,8 @@ public class PortfolioService {
         this.portfolioHelper = portfolioHelper;
     }
 
-    public Portfolio addBondToPortfolio(Portfolio portfolio, BondDTO bondDTO){
-        Bond bond = bondService.analyzeBond(bondDTO, java.time.LocalDate.now());
+    public Portfolio addBondToPortfolio(Portfolio portfolio, BondDTORequest bondDTORequest){
+        Bond bond = bondService.analyzeBond(bondDTORequest, java.time.LocalDate.now());
         portfolio.addBond(bond);
         analyzePortfolio(portfolio);
         bond.setBondWeightInPortfolio(portfolioHelper.calculateBondWeight(bond, portfolio));
@@ -28,9 +28,9 @@ public class PortfolioService {
 
     }
 
-    public Portfolio addBondsToPortfolio(Portfolio portfolio, List<BondDTO> bondDTOs){
-        for(BondDTO bondDTO : bondDTOs){
-            Bond bond = bondService.analyzeBond(bondDTO, java.time.LocalDate.now());
+    public Portfolio addBondsToPortfolio(Portfolio portfolio, List<BondDTORequest> bondDTORequests){
+        for(BondDTORequest bondDTORequest : bondDTORequests){
+            Bond bond = bondService.analyzeBond(bondDTORequest, java.time.LocalDate.now());
             portfolio.addBond(bond);
         }
         analyzePortfolio(portfolio);

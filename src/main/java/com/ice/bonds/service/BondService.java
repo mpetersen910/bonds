@@ -1,7 +1,7 @@
 package com.ice.bonds.service;
 
 import com.ice.bonds.dto.BondAnalysisResponse;
-import com.ice.bonds.dto.BondDTO;
+import com.ice.bonds.dto.BondDTORequest;
 import com.ice.bonds.helper.DurationHelper;
 import com.ice.bonds.helper.ISINHelper;
 import com.ice.bonds.helper.YTMHelper;
@@ -40,16 +40,16 @@ public class BondService {
      * Analyzes a bond and returns YTM, Macaulay Duration, and Modified Duration.
      * Validates the ISIN before processing.
      *
-     * @param bondDTO The bond data
+     * @param bondDTORequest The bond data
      * @return BondAnalysisResponse containing analysis results
      * @throws IllegalArgumentException if the ISIN is invalid
      */
-    public BondAnalysisResponse analyzeBondWithResponse(BondDTO bondDTO) {
+    public BondAnalysisResponse analyzeBondWithResponse(BondDTORequest bondDTORequest) {
 
-        Bond bond = analyzeBond(bondDTO, LocalDate.now());
+        Bond bond = analyzeBond(bondDTORequest, LocalDate.now());
 
         return new BondAnalysisResponse(
-                bondDTO.getIsin(),
+                bondDTORequest.getIsin(),
                 bond.getYieldToMaturity(),
                 bond.getMacaulayDuration(),
                 bond.getModifiedDuration(),
@@ -66,15 +66,15 @@ public class BondService {
      * Analyzes a bond as of a specific date.
      * Validates the ISIN before processing.
      *
-     * @param bondDTO The bond data
+     * @param bondDTORequest The bond data
      * @param currentDate The date to use for analysis (settlement date)
      * @return Bond containing analysis results
      * @throws IllegalArgumentException if the ISIN is invalid
      */
-    public Bond analyzeBond(BondDTO bondDTO, LocalDate currentDate) {
+    public Bond analyzeBond(BondDTORequest bondDTORequest, LocalDate currentDate) {
 
         // Convert DTO to Bond model
-        Bond bond = validateAndConvertToBond(bondDTO);
+        Bond bond = validateAndConvertToBond(bondDTORequest);
 
         // Calculate YTM (returns in basis points)
         double ytm = ytmHelper.calculateYTM(currentDate, bond);
@@ -95,14 +95,14 @@ public class BondService {
     }
 
     /**
-     * Validates and converts a BondDTO to a Bond model.
+     * Validates and converts a BondDTORequest to a Bond model.
      * Validates the ISIN before conversion.
      *
      * @param dto The bond DTO
      * @return The converted Bond model
      * @throws IllegalArgumentException if the ISIN is invalid
      */
-    public Bond validateAndConvertToBond(BondDTO dto) {
+    public Bond validateAndConvertToBond(BondDTORequest dto) {
         validateISIN(dto.getIsin());
         validateDate(dto.getIssueDate(), "issueDate");
         validateDate(dto.getMaturityDate(), "maturityDate");
@@ -114,7 +114,7 @@ public class BondService {
     }
 
     /**
-     * Converts BondDTO to Bond model without validation.
+     * Converts BondDTORequest to Bond model without validation.
      * Use validateAndConvertToBond() if you need ISIN validation.
      *
      * @param dto The bond DTO
@@ -124,7 +124,7 @@ public class BondService {
      * @param quantity The validated quantity
      * @return The converted Bond model
      */
-    public Bond convertToBond(BondDTO dto, int faceValue, int marketValue, int couponRate, int quantity) {
+    public Bond convertToBond(BondDTORequest dto, int faceValue, int marketValue, int couponRate, int quantity) {
         DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
         LocalDate maturityDate = LocalDate.parse(dto.getMaturityDate(), formatter);
