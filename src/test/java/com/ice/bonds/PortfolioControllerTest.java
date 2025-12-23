@@ -1045,5 +1045,230 @@ class PortfolioControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
+
+    @Nested
+    @DisplayName("Analyze From String Endpoint Tests")
+    class AnalyzeFromStringTests {
+
+        // Create a JSON-serialized string for a single bond portfolio
+        private String createJsonStringPayloadSingle(String isin, String issueDate, String maturityDate,
+                                                      String couponRate, String faceValue, String marketValue,
+                                                      String paymentTerm, String quantity) {
+            String innerJson = String.format(
+                "[{\"isin\": \"%s\", \"issueDate\": \"%s\", \"maturityDate\": \"%s\", " +
+                "\"couponRate\": \"%s\", \"faceValue\": \"%s\", \"marketValue\": \"%s\", " +
+                "\"paymentTerm\": \"%s\", \"quantity\": \"%s\"}]",
+                isin, issueDate, maturityDate, couponRate, faceValue, marketValue, paymentTerm, quantity);
+            return "\"" + innerJson.replace("\"", "\\\"") + "\"";
+        }
+
+        // Create a JSON-serialized string for a two bond portfolio
+        private String createJsonStringPayloadTwo(
+                String isin1, String issueDate1, String maturityDate1, String couponRate1,
+                String faceValue1, String marketValue1, String paymentTerm1, String quantity1,
+                String isin2, String issueDate2, String maturityDate2, String couponRate2,
+                String faceValue2, String marketValue2, String paymentTerm2, String quantity2) {
+            String innerJson = String.format(
+                "[{\"isin\": \"%s\", \"issueDate\": \"%s\", \"maturityDate\": \"%s\", " +
+                "\"couponRate\": \"%s\", \"faceValue\": \"%s\", \"marketValue\": \"%s\", " +
+                "\"paymentTerm\": \"%s\", \"quantity\": \"%s\"}, " +
+                "{\"isin\": \"%s\", \"issueDate\": \"%s\", \"maturityDate\": \"%s\", " +
+                "\"couponRate\": \"%s\", \"faceValue\": \"%s\", \"marketValue\": \"%s\", " +
+                "\"paymentTerm\": \"%s\", \"quantity\": \"%s\"}]",
+                isin1, issueDate1, maturityDate1, couponRate1, faceValue1, marketValue1, paymentTerm1, quantity1,
+                isin2, issueDate2, maturityDate2, couponRate2, faceValue2, marketValue2, paymentTerm2, quantity2);
+            return "\"" + innerJson.replace("\"", "\\\"") + "\"";
+        }
+
+        @Test
+        @DisplayName("Should successfully analyze valid portfolio from JSON string")
+        void shouldAnalyzeValidPortfolioFromJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadTwo(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15", "500", "100000", "95000", "semiannual", "10",
+                VALID_ISIN_2, "2022-06-01", "2032-06-01", "650", "100000", "105000", "semiannual", "5"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.id").isNotEmpty())
+                    .andExpect(jsonPath("$.accountId").value("default-account"))
+                    .andExpect(jsonPath("$.bonds").isArray())
+                    .andExpect(jsonPath("$.bonds.length()").value(2))
+                    .andExpect(jsonPath("$.weightedMacaulayDuration").isNumber())
+                    .andExpect(jsonPath("$.weightedModifiedDuration").isNumber())
+                    .andExpect(jsonPath("$.totalPortfolioValue").isNumber());
+        }
+
+        @Test
+        @DisplayName("Should return bond weights in portfolio from JSON string")
+        void shouldReturnBondWeightsFromJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadTwo(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15", "500", "100000", "95000", "semiannual", "10",
+                VALID_ISIN_2, "2022-06-01", "2032-06-01", "650", "100000", "105000", "semiannual", "5"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.bonds[0].bondWeightInPortfolio").isNumber())
+                    .andExpect(jsonPath("$.bonds[1].bondWeightInPortfolio").isNumber())
+                    .andExpect(jsonPath("$.bonds[0].bondWeightInPortfolio").value(greaterThan(0.0)))
+                    .andExpect(jsonPath("$.bonds[0].bondWeightInPortfolio").value(lessThan(1.0)))
+                    .andExpect(jsonPath("$.bonds[1].bondWeightInPortfolio").value(greaterThan(0.0)))
+                    .andExpect(jsonPath("$.bonds[1].bondWeightInPortfolio").value(lessThan(1.0)));
+        }
+
+        @Test
+        @DisplayName("Should handle single bond portfolio from JSON string")
+        void shouldHandleSingleBondPortfolioFromJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadSingle(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                "500", "100000", "95000", "semiannual", "100"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.bonds.length()").value(1))
+                    .andExpect(jsonPath("$.bonds[0].bondWeightInPortfolio").value(1.0));
+        }
+
+        @Test
+        @DisplayName("Should handle empty portfolio from JSON string")
+        void shouldHandleEmptyPortfolioFromJsonString() throws Exception {
+            String emptyJsonString = "\"[]\"";  // JSON string containing empty array
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(emptyJsonString))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.bonds").isArray())
+                    .andExpect(jsonPath("$.bonds.length()").value(0));
+        }
+
+        @Test
+        @DisplayName("Should reject invalid JSON format")
+        void shouldRejectInvalidJsonFormat() throws Exception {
+            String invalidJsonString = "\"this is not valid json\"";
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(invalidJsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject malformed escaped JSON array")
+        void shouldRejectMalformedEscapedJsonArray() throws Exception {
+            String malformedJsonString = "\"[{\\\"isin\\\": \\\"US0378331005\\\", \\\"missing_closing\\\"\"";
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(malformedJsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject invalid ISIN in JSON string")
+        void shouldRejectInvalidIsinInJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadSingle(
+                "INVALID123", "2023-01-15", "2033-01-15",
+                "500", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject invalid date format in JSON string")
+        void shouldRejectInvalidDateFormatInJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadSingle(
+                VALID_ISIN_1, "01/15/2023", "01/15/2033",
+                "500", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject if any bond has invalid values in JSON string")
+        void shouldRejectIfAnyBondHasInvalidValuesInJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadTwo(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15", "500", "100000", "95000", "semiannual", "10",
+                VALID_ISIN_2, "2022-06-01", "2032-06-01", "abc", "100000", "105000", "semiannual", "5"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject decimal values in JSON string")
+        void shouldRejectDecimalValuesInJsonString() throws Exception {
+            String jsonString = createJsonStringPayloadSingle(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                "500.5", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject null JSON string")
+        void shouldRejectNullJsonString() throws Exception {
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("null"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject raw array instead of string")
+        void shouldRejectRawArrayInsteadOfString() throws Exception {
+            // Raw array without string wrapper - should fail because endpoint expects a JSON string
+            String rawArray = "[{\"isin\": \"US0378331005\", \"issueDate\": \"2023-01-15\", \"maturityDate\": \"2033-01-15\", \"couponRate\": \"500\", \"faceValue\": \"100000\", \"marketValue\": \"95000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"1\"}]";
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(rawArray))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject empty string")
+        void shouldRejectEmptyString() throws Exception {
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("\"\""))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject double-encoded JSON string")
+        void shouldRejectDoubleEncodedJsonString() throws Exception {
+            // Double escaped - a string containing an escaped string
+            String doubleEncoded = "\"\\\"[{\\\\\\\"isin\\\\\\\": \\\\\\\"US0378331005\\\\\\\"}]\\\"\"";
+
+            mockMvc.perform(post("/api/portfolios/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(doubleEncoded))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 }
 

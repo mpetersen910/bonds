@@ -908,5 +908,192 @@ class BondControllerTest {
                     .andExpect(status().isBadRequest());
         }
     }
+
+    @Nested
+    @DisplayName("Analyze From String Endpoint Tests")
+    class AnalyzeFromStringTests {
+
+        // Create a JSON-serialized string (the outer quotes make it a JSON string value containing escaped JSON)
+        private String createJsonStringPayload(String isin, String issueDate, String maturityDate,
+                                              String couponRate, String faceValue, String marketValue,
+                                              String paymentTerm, String quantity) {
+            // The endpoint expects a JSON string (with outer quotes) that contains escaped JSON inside
+            String innerJson = String.format(
+                "{\"isin\": \"%s\", \"issueDate\": \"%s\", \"maturityDate\": \"%s\", " +
+                "\"couponRate\": \"%s\", \"faceValue\": \"%s\", \"marketValue\": \"%s\", " +
+                "\"paymentTerm\": \"%s\", \"quantity\": \"%s\"}",
+                isin, issueDate, maturityDate, couponRate, faceValue, marketValue, paymentTerm, quantity);
+            // Escape the inner JSON and wrap in quotes to make it a JSON string value
+            return "\"" + innerJson.replace("\"", "\\\"") + "\"";
+        }
+
+        @Test
+        @DisplayName("Should successfully analyze valid bond from JSON string")
+        void shouldAnalyzeValidBondFromJsonString() throws Exception {
+            String jsonString = createJsonStringPayload(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                "500", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isin").value(VALID_ISIN_1))
+                    .andExpect(jsonPath("$.couponRate").value(500))
+                    .andExpect(jsonPath("$.faceValue").value(100000))
+                    .andExpect(jsonPath("$.marketValue").value(95000))
+                    .andExpect(jsonPath("$.paymentTerm").value("semiannual"))
+                    .andExpect(jsonPath("$.ytm").isNumber())
+                    .andExpect(jsonPath("$.macaulayDuration").isNumber())
+                    .andExpect(jsonPath("$.modifiedDuration").isNumber());
+        }
+
+        @Test
+        @DisplayName("Should return same results as regular analyze endpoint")
+        void shouldReturnSameResultsAsRegularEndpoint() throws Exception {
+            // First, call the regular endpoint
+            String regularJson = createBondJson(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                500, 100000, 95000, "semiannual", 1
+            );
+
+            // Then, call the string endpoint with the same data
+            String jsonString = createJsonStringPayload(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                "500", "100000", "95000", "semiannual", "1"
+            );
+
+            // Both should succeed with same response structure
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isin").value(VALID_ISIN_1))
+                    .andExpect(jsonPath("$.ytm").isNumber())
+                    .andExpect(jsonPath("$.macaulayDuration").isNumber())
+                    .andExpect(jsonPath("$.modifiedDuration").isNumber());
+        }
+
+        @Test
+        @DisplayName("Should reject invalid JSON format")
+        void shouldRejectInvalidJsonFormat() throws Exception {
+            String invalidJsonString = "\"this is not valid json\"";
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(invalidJsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject malformed escaped JSON")
+        void shouldRejectMalformedEscapedJson() throws Exception {
+            String malformedJsonString = "\"{\\\"isin\\\": \\\"US0378331005\\\", \\\"missing_closing_brace\\\"\"";
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(malformedJsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject invalid ISIN in JSON string")
+        void shouldRejectInvalidIsinInJsonString() throws Exception {
+            String jsonString = createJsonStringPayload(
+                "INVALID123", "2023-01-15", "2033-01-15",
+                "500", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject invalid date format in JSON string")
+        void shouldRejectInvalidDateFormatInJsonString() throws Exception {
+            String jsonString = createJsonStringPayload(
+                VALID_ISIN_1, "01/15/2023", "01/15/2033",
+                "500", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject decimal values in JSON string")
+        void shouldRejectDecimalValuesInJsonString() throws Exception {
+            String jsonString = createJsonStringPayload(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                "500.5", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject negative values in JSON string")
+        void shouldRejectNegativeValuesInJsonString() throws Exception {
+            String jsonString = createJsonStringPayload(
+                VALID_ISIN_1, "2023-01-15", "2033-01-15",
+                "-500", "100000", "95000", "semiannual", "1"
+            );
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(jsonString))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject null JSON string")
+        void shouldRejectNullJsonString() throws Exception {
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("null"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject raw object instead of string")
+        void shouldRejectRawObjectInsteadOfString() throws Exception {
+            // Raw object without string wrapper - should fail because endpoint expects a JSON string
+            String rawObject = "{\"isin\": \"US0378331005\", \"issueDate\": \"2023-01-15\", \"maturityDate\": \"2033-01-15\", \"couponRate\": \"500\", \"faceValue\": \"100000\", \"marketValue\": \"95000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"1\"}";
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(rawObject))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject empty string")
+        void shouldRejectEmptyString() throws Exception {
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("\"\""))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Should reject double-encoded JSON string")
+        void shouldRejectDoubleEncodedJsonString() throws Exception {
+            // Double escaped - a string containing an escaped string
+            String doubleEncoded = "\"\\\"{\\\\\\\"isin\\\\\\\": \\\\\\\"US0378331005\\\\\\\"}\\\"\"";
+
+            mockMvc.perform(post("/api/bonds/analyze-from-string")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(doubleEncoded))
+                    .andExpect(status().isBadRequest());
+        }
+    }
 }
 

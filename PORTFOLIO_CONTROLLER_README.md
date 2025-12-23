@@ -2,11 +2,21 @@
 
 Analyze a portfolio of bonds to calculate individual bond metrics and portfolio-level weighted durations.
 
-## Endpoint
+## Endpoints
+
+### 1. Analyze Portfolio (JSON Array)
 
 ```
 POST /api/portfolios/analyze
 ```
+
+### 2. Analyze Portfolio from JSON String
+
+```
+POST /api/portfolios/analyze-from-string
+```
+
+Accepts JSON serialized as a string (useful when portfolio data is stored or transmitted as a string value).
 
 ## Request Body
 
@@ -159,6 +169,87 @@ curl -X POST http://localhost:8080/api/portfolios/analyze \
     }
   ]'
 ```
+
+## Analyze from JSON String Endpoint
+
+The `/api/portfolios/analyze-from-string` endpoint accepts a JSON-serialized string containing an array of bonds. This is useful when portfolio data has been serialized to a string for storage or transmission.
+
+### Request Format
+
+The request body should be a JSON string value containing the escaped bond array JSON:
+
+```json
+"[{\"isin\": \"US0378331005\", \"issueDate\": \"2023-01-15\", \"maturityDate\": \"2033-01-15\", \"couponRate\": \"500\", \"faceValue\": \"100000\", \"marketValue\": \"95000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"10\"}, {\"isin\": \"US5949181045\", \"issueDate\": \"2022-06-01\", \"maturityDate\": \"2032-06-01\", \"couponRate\": \"650\", \"faceValue\": \"100000\", \"marketValue\": \"105000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"5\"}]"
+```
+
+### cURL Example (JSON String)
+
+```bash
+curl -X POST http://localhost:8080/api/portfolios/analyze-from-string \
+  -H "Content-Type: application/json" \
+  -d '"[{\"isin\": \"US0378331005\", \"issueDate\": \"2023-01-15\", \"maturityDate\": \"2033-01-15\", \"couponRate\": \"500\", \"faceValue\": \"100000\", \"marketValue\": \"95000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"10\"}, {\"isin\": \"US5949181045\", \"issueDate\": \"2022-06-01\", \"maturityDate\": \"2032-06-01\", \"couponRate\": \"650\", \"faceValue\": \"100000\", \"marketValue\": \"105000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"5\"}]"'
+```
+
+### Sample Response
+
+The response format is identical to the `/api/portfolios/analyze` endpoint:
+
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "accountId": "default-account",
+  "bonds": [
+    {
+      "isin": "US0378331005",
+      "ytm": 569.1284271541838,
+      "macaulayDuration": 7.932435678901234,
+      "modifiedDuration": 7.713456789012345,
+      "maturityDate": "2033-01-15",
+      "issueDate": "2023-01-15",
+      "couponRate": 500,
+      "faceValue": 100000,
+      "marketValue": 95000,
+      "paymentTerm": "semiannual",
+      "quantity": 10,
+      "bondWeightInPortfolio": 0.6442307692307693
+    },
+    {
+      "isin": "US5949181045",
+      "ytm": 576.2345678901234,
+      "macaulayDuration": 6.123456789012345,
+      "modifiedDuration": 5.987654321098765,
+      "maturityDate": "2032-06-01",
+      "issueDate": "2022-06-01",
+      "couponRate": 650,
+      "faceValue": 100000,
+      "marketValue": 105000,
+      "paymentTerm": "semiannual",
+      "quantity": 5,
+      "bondWeightInPortfolio": 0.3557692307692307
+    }
+  ],
+  "weightedMacaulayDuration": 7.289012345678901,
+  "weightedModifiedDuration": 7.098765432109876,
+  "totalPortfolioValue": 1475000
+}
+```
+
+### Use Cases
+
+- Loading multiple bonds stored as a serialized JSON string in databases
+- Processing portfolio data received from message queues where JSON is string-encoded
+- Batch importing bond data from files where arrays are stored as strings
+- Integrating with systems that transmit JSON arrays as escaped string values
+
+### Empty Portfolio (JSON String)
+
+```bash
+curl -X POST http://localhost:8080/api/portfolios/analyze-from-string \
+  -H "Content-Type: application/json" \
+  -d '"[]"'
+```
+
+Returns a portfolio with zero bonds, zero total value, and zero weighted durations.
 
 ## Error Responses
 

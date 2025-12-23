@@ -2,11 +2,21 @@
 
 Analyze individual bonds to calculate Yield to Maturity (YTM), Macaulay Duration, and Modified Duration.
 
-## Endpoint
+## Endpoints
+
+### 1. Analyze Bond (JSON Object)
 
 ```
 POST /api/bonds/analyze
 ```
+
+### 2. Analyze Bond from JSON String
+
+```
+POST /api/bonds/analyze-from-string
+```
+
+Accepts JSON serialized as a string (useful when bond data is stored or transmitted as a string value).
 
 ## Request Body
 
@@ -95,6 +105,52 @@ curl -X POST http://localhost:8080/api/bonds/analyze \
     "quantity": 1
   }'
 ```
+
+## Analyze from JSON String Endpoint
+
+The `/api/bonds/analyze-from-string` endpoint accepts a JSON-serialized string. This is useful when bond data has been serialized to a string for storage or transmission.
+
+### Request Format
+
+The request body should be a JSON string value containing the escaped bond JSON:
+
+```json
+"{\"isin\": \"US0378331005\", \"issueDate\": \"2023-01-15\", \"maturityDate\": \"2033-01-15\", \"couponRate\": \"500\", \"faceValue\": \"100000\", \"marketValue\": \"95000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"1\"}"
+```
+
+### CURL Example (JSON String)
+
+```bash
+curl -X POST http://localhost:8080/api/bonds/analyze-from-string \
+  -H "Content-Type: application/json" \
+  -d '"{\"isin\": \"US0378331005\", \"issueDate\": \"2023-01-15\", \"maturityDate\": \"2033-01-15\", \"couponRate\": \"500\", \"faceValue\": \"100000\", \"marketValue\": \"95000\", \"paymentTerm\": \"semiannual\", \"quantity\": \"1\"}"'
+```
+
+### Sample Response
+
+The response format is identical to the `/api/bonds/analyze` endpoint:
+
+```json
+{
+  "isin": "US0378331005",
+  "ytm": 569.1284271541838,
+  "macaulayDuration": 7.932435678901234,
+  "modifiedDuration": 7.713456789012345,
+  "maturityDate": "2033-01-15",
+  "issueDate": "2023-01-15",
+  "couponRate": 500,
+  "faceValue": 100000,
+  "marketValue": 95000,
+  "paymentTerm": "semiannual",
+  "quantity": 1
+}
+```
+
+### Use Cases
+
+- Loading bond data stored as serialized JSON strings in databases
+- Processing bond data received from message queues where JSON is string-encoded
+- Integrating with systems that transmit JSON as escaped string values
 
 ## Error Responses
 

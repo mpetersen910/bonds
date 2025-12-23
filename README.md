@@ -40,7 +40,11 @@ The API will be available at `http://localhost:8080`
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/bonds/analyze` | Analyze a single bond |
+| POST | `/api/bonds/analyze-from-string` | Analyze a single bond from JSON string |
 | POST | `/api/portfolios/analyze` | Analyze a portfolio of bonds |
+| POST | `/api/portfolios/analyze-from-string` | Analyze a portfolio from JSON string |
+
+The `-from-string` endpoints accept JSON data serialized as a string, useful for loading data stored or transmitted as string values.
 
 ## Input Format
 

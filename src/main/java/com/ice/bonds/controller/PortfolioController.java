@@ -1,5 +1,8 @@
 package com.ice.bonds.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ice.bonds.dto.BondDTO;
 import com.ice.bonds.dto.BondInPortfolioAnalysisResponse;
 import com.ice.bonds.dto.PortfolioAnalysisResponse;
@@ -22,9 +25,11 @@ public class PortfolioController {
     private static final Logger logger = LoggerFactory.getLogger(PortfolioController.class);
 
     private final PortfolioService portfolioService;
+    private final ObjectMapper objectMapper;
 
-    public PortfolioController(PortfolioService portfolioService) {
+    public PortfolioController(PortfolioService portfolioService, ObjectMapper objectMapper) {
         this.portfolioService = portfolioService;
+        this.objectMapper = objectMapper;
     }
 
     /**
@@ -36,6 +41,42 @@ public class PortfolioController {
     @PostMapping("/analyze")
     public ResponseEntity<PortfolioAnalysisResponse> analyzePortfolio(@RequestBody List<BondDTO> bondDTOs) {
         logger.info("Received portfolio analysis request with {} bonds", bondDTOs.size());
+
+        // Create a new portfolio with a default account ID
+        Portfolio portfolio = new Portfolio("default-account");
+
+        // Add bonds to the portfolio and analyze
+        portfolio = portfolioService.addBondsToPortfolio(portfolio, bondDTOs);
+
+        // Map the portfolio to the response DTO
+        PortfolioAnalysisResponse response = mapToPortfolioAnalysisResponse(portfolio);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Analyzes a portfolio of bonds from a JSON string.
+     * Accepts JSON serialized into a string and deserializes it.
+     *
+     * @param jsonString JSON string containing list of bond data
+     * @return PortfolioAnalysisResponse containing portfolio analysis results
+     */
+    @PostMapping("/analyze-from-string")
+    public ResponseEntity<PortfolioAnalysisResponse> analyzePortfolioFromString(@RequestBody String jsonString) {
+        logger.info("Received portfolio analysis request from JSON string");
+
+        List<BondDTO> bondDTOs;
+        try {
+            // The input is a JSON-encoded string. We need to first deserialize the string value,
+            // then parse the resulting JSON array.
+            String actualJson = objectMapper.readValue(jsonString, String.class);
+            bondDTOs = objectMapper.readValue(actualJson, new TypeReference<List<BondDTO>>() {});
+        } catch (JsonProcessingException e) {
+            logger.error("Failed to parse JSON string: {}", e.getMessage());
+            throw new IllegalArgumentException("Invalid JSON format: " + e.getMessage());
+        }
+
+        logger.info("Parsed {} bonds from JSON string", bondDTOs.size());
 
         // Create a new portfolio with a default account ID
         Portfolio portfolio = new Portfolio("default-account");
