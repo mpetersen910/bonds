@@ -2,6 +2,7 @@ package com.ice.bonds.model;
 
 import java.time.LocalDate;
 
+//TODO: How would this model or a future interface look if we wanted to support other bond types (e.g., Zero-Coupon, Floating Rate, etc.)
 public class Bond {
 
     //International Securities Identification Number
