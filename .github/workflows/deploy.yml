@@ -1,13 +1,12 @@
 name: Deploy to GCP VM
 
 on:
-  push:
-    branches: [ main, develop ]
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: prod
 
     steps:
       - uses: actions/checkout@v4
