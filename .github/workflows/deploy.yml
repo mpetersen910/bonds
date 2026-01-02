@@ -32,4 +32,4 @@ jobs:
       - name: Deploy to VM
         run: |
           gcloud compute scp target/*.jar bonds-vm-us-east:/tmp/bonds.jar --zone=us-east1-b
-          gcloud compute ssh bonds-vm-us-east --zone=us-east1-b --command="sudo systemctl stop bonds && sudo mv /tmp/bonds.jar /opt/bonds/bonds.jar && sudo systemctl start bonds"
+          gcloud compute ssh bonds-vm-us-east --zone=us-east1-b --command="sudo systemctl stop bonds || true && sudo mv /tmp/bonds.jar /opt/bonds/bonds.jar && sudo systemctl start bonds"
